@@ -22,14 +22,14 @@ VTOL::VTOL(Context & context, const VTOLConfig & config)
     context.topicNamespacePrefix() + "fmu/in/vehicle_command" + px4_ros2::getMessageNameVersion<px4_msgs::msg::VehicleCommand>(),
     1);
 
-  _vehicle_status_sub = _node.create_subscription<px4_msgs::msg::VehicleStatus>(
-    context.topicNamespacePrefix() + "fmu/out/vehicle_status" + px4_ros2::getMessageNameVersion<px4_msgs::msg::VehicleStatus>(),
-    rclcpp::QoS(10).best_effort(),
-    [this](px4_msgs::msg::VehicleStatus::UniquePtr msg) {
-      _system_id = msg->system_id;
-      _component_id = msg->component_id;
+  // _vehicle_status_sub = _node.create_subscription<px4_msgs::msg::VehicleStatus>(
+  //   context.topicNamespacePrefix() + "fmu/out/vehicle_status" + px4_ros2::getMessageNameVersion<px4_msgs::msg::VehicleStatus>(),
+  //   rclcpp::QoS(10).best_effort(),
+  //   [this](px4_msgs::msg::VehicleStatus::UniquePtr msg) {
+  //     _system_id = msg->system_id;
+  //     _component_id = msg->component_id;
 
-    });
+  //   });
 
   _vtol_vehicle_status_sub = _node.create_subscription<px4_msgs::msg::VtolVehicleStatus>(
     context.topicNamespacePrefix() + "fmu/out/vtol_vehicle_status" + px4_ros2::getMessageNameVersion<px4_msgs::msg::VtolVehicleStatus>(),
@@ -75,7 +75,7 @@ VTOL::State VTOL::get_current_state()
   return _current_state;
 }
 
-void VTOL::to_multicopter()
+bool VTOL::to_multicopter()
 {
   const auto now = _node.get_clock()->now();
 
@@ -93,17 +93,19 @@ void VTOL::to_multicopter()
 
       cmd.param2 = 0;
 
-      cmd.target_system = _system_id;
-      cmd.target_component = _component_id;
+      cmd.target_system = 0;
+      cmd.target_component = 1;
 
       _vehicle_command_pub->publish(cmd);
     }
+    return true;
   } else {
     RCLCPP_WARN(_node.get_logger(), "Current VTOL vehicle state unknown. Not able to transition.");
+    return false;
   }
 }
 
-void VTOL::to_fixedwing()
+bool VTOL::to_fixedwing()
 {
   const auto now = _node.get_clock()->now();
 
@@ -121,13 +123,15 @@ void VTOL::to_fixedwing()
 
       cmd.param2 = 0;
 
-      cmd.target_system = _system_id;
-      cmd.target_component = _component_id;
+      cmd.target_system = 0;
+      cmd.target_component = 1;
 
       _vehicle_command_pub->publish(cmd);
     }
+    return true;
   } else {
     RCLCPP_WARN(_node.get_logger(), "Current VTOL vehicle state unknown. Not able to transition.");
+    return false;
   }
 }
 
@@ -136,8 +140,8 @@ Eigen::Vector3f VTOL::compute_acceleration_setpoint_during_transition(
 {
   const Eigen::Vector2f velocity_xy_direction = {std::cos(_vehicle_heading), std::sin(
       _vehicle_heading)};
-  bool is_backtransition =
-    (VTOL::get_current_state() == VTOL::State::TRANSITION_TO_MULTICOPTER) ? true : false;
+  const bool is_backtransition = VTOL::get_current_state() ==
+    VTOL::State::TRANSITION_TO_MULTICOPTER;
 
   float pitch_setpoint = 0.f;
 

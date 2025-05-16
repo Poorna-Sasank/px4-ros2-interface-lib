@@ -71,8 +71,8 @@ public:
    * VTOL Transition
    */
 
-  void to_multicopter();
-  void to_fixedwing();
+  bool to_multicopter();
+  bool to_fixedwing();
 
   Eigen::Vector3f compute_acceleration_setpoint_during_transition(
     std::optional<float> back_transition_deceleration_m_s2 = std::nullopt);
@@ -89,9 +89,9 @@ private:
   rclcpp::Time _last_vtol_vehicle_status_received;
   rclcpp::Time _last_pitch_integrator_update{0, 0, _node.get_clock()->get_clock_type()};
 
-  px4_msgs::msg::VehicleStatus::UniquePtr _vehicle_status_msg;
-  px4_msgs::msg::VtolVehicleStatus::UniquePtr _vtol_vehicle_status_msg;
-  px4_msgs::msg::VehicleLocalPosition::UniquePtr _vehicle_local_position_msg;
+  // px4_msgs::msg::VehicleStatus::UniquePtr _vehicle_status_msg;
+  // px4_msgs::msg::VtolVehicleStatus::UniquePtr _vtol_vehicle_status_msg;
+  // px4_msgs::msg::VehicleLocalPosition::UniquePtr _vehicle_local_position_msg;
 
   uint _system_id;
   uint _component_id;

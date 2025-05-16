@@ -16,7 +16,7 @@
 
 namespace px4_ros2
 {
-/** \ingroup setpoint_types_experimental
+/** \ingroup setpoint_types
  *  @{
  */
 
@@ -41,11 +41,14 @@ public:
    *
    * @param setpoint a FwLateralLongitudinalSetpoint object where course, airspeed
    * direction, lateral acceleration, altitude, height rate and equivalent airspeed
-   * can be set for full flexibility. See (## TODO: ADD LINK TO PX4_MSGS) for more information on this
-   * setpoint type.
+   * can be set for full flexibility. See https://docs.px4.io/main/en/msg_docs/FixedWingLateralSetpoint.html
+   * and https://docs.px4.io/main/en/msg_docs/FixedWingLongitudinalSetpoint.html for more
+   * information on this setpoint type.
    *
    * @param config a FwControlConfiguration object where pitch, throttle, lateral acceleration
-   * configuration can be set. See (## TODO: ADD LINK TO PX4_MSGS) for more information.
+   * configuration can be set. See https://docs.px4.io/main/en/msg_docs/LateralControlConfiguration.html
+   * and https://docs.px4.io/main/en/msg_docs/LongitudinalControlConfiguration.html for more information
+   * on how to configure the setpoint.
    *
    */
 
@@ -58,8 +61,9 @@ public:
  *
  * @param setpoint a FwLateralLongitudinalSetpoint object where course, airspeed
  * direction, lateral acceleration, altitude, height rate and equivalent airspeed
- * can be set for full flexibility. See (## TODO: ADD LINK TO PX4_MSGS) for more information on this
- * setpoint type.
+ * can be set for full flexibility. See https://docs.px4.io/main/en/msg_docs/FixedWingLateralSetpoint.html
+ * and https://docs.px4.io/main/en/msg_docs/FixedWingLongitudinalSetpoint.html for more
+ * information on this setpoint type.
  *
  * @warning Any previously set configurations will be maintained when this method is called.
  * If no configurations have been previously set, PX4 will set default configuration.
@@ -68,16 +72,27 @@ public:
   void update(const FwLateralLongitudinalSetpoint & setpoint);
 
   /**
-* @brief Update the setpoint with simplest set of inputs. Lateral acceleration setpoints will be used as feedforward when course is provided.
-*  To directly control lateral acceleration, set course_sp to NAN. If a height rate is provided, the altitude setpoint
-*  is not used.
+* @brief Update the setpoint with simplest set of inputs: Altitude and Course. Lateral acceleration setpoints will be used as feedforward when course is provided.
+*  To directly control lateral acceleration, set course_sp to NAN.
 *
 * @warning Any previously set configurations will be maintained when this method is called.
 * If no configurations have been previously set, PX4 will set default configurations.
 */
-  void update(
+  void updateWithAltitude(
     const float altitude_amsl_sp, const float course_sp,
-    std::optional<float> height_rate_sp = {}, std::optional<float> equivalent_airspeed_sp = {},
+    std::optional<float> equivalent_airspeed_sp = {},
+    std::optional<float> lateral_acceleration_sp = {});
+
+  /**
+* @brief Update the setpoint with simplest set of inputs: Height rate and Course. Lateral acceleration setpoints will be used as feedforward when course is provided.
+*  To directly control lateral acceleration, set course_sp to NAN.
+*
+* @warning Any previously set configurations will be maintained when this method is called.
+* If no configurations have been previously set, PX4 will set default configurations.
+*/
+  void updateWithHeightRate(
+    const float height_rate_sp, const float course_sp,
+    std::optional<float> equivalent_airspeed_sp = {},
     std::optional<float> lateral_acceleration_sp = {});
 
   float desiredUpdateRateHz() override {return 30.f;}
