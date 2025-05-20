@@ -89,17 +89,9 @@ private:
   rclcpp::Time _last_vtol_vehicle_status_received;
   rclcpp::Time _last_pitch_integrator_update{0, 0, _node.get_clock()->get_clock_type()};
 
-  // px4_msgs::msg::VehicleStatus::UniquePtr _vehicle_status_msg;
-  // px4_msgs::msg::VtolVehicleStatus::UniquePtr _vtol_vehicle_status_msg;
-  // px4_msgs::msg::VehicleLocalPosition::UniquePtr _vehicle_local_position_msg;
-
-  uint _system_id;
-  uint _component_id;
-
   float _vehicle_heading{NAN};
   float _decel_error_bt_int{0.f};
 
-  Eigen::Vector2f _vehicle_velocity_xy{NAN, NAN};
   Eigen::Vector2f _vehicle_acceleration_xy{NAN, NAN};
 
   VTOL::State _current_state{VTOL::State::UNDEFINED};

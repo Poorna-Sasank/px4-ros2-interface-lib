@@ -22,15 +22,6 @@ VTOL::VTOL(Context & context, const VTOLConfig & config)
     context.topicNamespacePrefix() + "fmu/in/vehicle_command" + px4_ros2::getMessageNameVersion<px4_msgs::msg::VehicleCommand>(),
     1);
 
-  // _vehicle_status_sub = _node.create_subscription<px4_msgs::msg::VehicleStatus>(
-  //   context.topicNamespacePrefix() + "fmu/out/vehicle_status" + px4_ros2::getMessageNameVersion<px4_msgs::msg::VehicleStatus>(),
-  //   rclcpp::QoS(10).best_effort(),
-  //   [this](px4_msgs::msg::VehicleStatus::UniquePtr msg) {
-  //     _system_id = msg->system_id;
-  //     _component_id = msg->component_id;
-
-  //   });
-
   _vtol_vehicle_status_sub = _node.create_subscription<px4_msgs::msg::VtolVehicleStatus>(
     context.topicNamespacePrefix() + "fmu/out/vtol_vehicle_status" + px4_ros2::getMessageNameVersion<px4_msgs::msg::VtolVehicleStatus>(),
     rclcpp::QoS(10).best_effort(),
@@ -61,7 +52,6 @@ VTOL::VTOL(Context & context, const VTOLConfig & config)
     rclcpp::QoS(10).best_effort(),
     [this](px4_msgs::msg::VehicleLocalPosition::UniquePtr msg) {
       _vehicle_heading = msg->heading;
-      _vehicle_velocity_xy = {msg->vx, msg->vy};
       _vehicle_acceleration_xy = {msg->ax, msg->ay};
 
     });
