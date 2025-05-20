@@ -18,6 +18,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 using namespace std::chrono_literals; // NOLINT
+using namespace px4_ros2::literals;
 using namespace px4_ros2;
 
 static const std::string kName = "My VTOL Mode";
@@ -41,12 +42,12 @@ public:
 
     if(initial_vtol_state == VTOL::State::FIXED_WING){
       _control_state = State::GoingNorth; 
-      std::cout << "VTOL Mode Activated. Flying North, climbing to 600m above sea level." << std::endl; 
+      RCLCPP_INFO(node().get_logger(), "VTOL Mode Activated. Flying North, climbing to 600m above sea level."); 
     } else if(initial_vtol_state == VTOL::State::UNDEFINED){
       throw std::runtime_error("VTOL state undefined.");
     } else{
       _control_state = State::TransitionToFixedWing; 
-      std::cout << "VTOL Mode Activated. Transitioning to Fixed-Wing." << std::endl; 
+      RCLCPP_INFO(node().get_logger(), "VTOL Mode Activated. Transitioning to Fixed-Wing");
   }
 }
 
@@ -64,7 +65,7 @@ public:
 
           Eigen::Vector3f acceleration_sp = _vtol->compute_acceleration_setpoint_during_transition(); 
           Eigen::Vector3f velocity_sp{NAN, NAN, 0.f}; 
-          float course_sp = 0.f; //align vehicle north 
+          float course_sp = 0.f; // align vehicle north 
           float height_rate_sp = 0.f; 
 
           _trajectory_setpoint->update(velocity_sp, acceleration_sp); 
@@ -78,7 +79,7 @@ public:
           _fixed_wing_setpoint->updateWithAltitude(altitude_sp, course_sp); 
 
           _control_state = State::GoingNorth; 
-          std::cout << "Transition complete. Flying North, climbing to 600m above sea level." << std::endl; 
+          RCLCPP_INFO(node().get_logger(), "Transition complete. Flying North, climbing to 600m above sea level."); 
         }
       }
       break; 
@@ -92,7 +93,7 @@ public:
 
         if(_vehicle_global_position->position().z() >= (altitude_sp - 5.f)){
           _control_state = State::TransitionToMulticopterAndHold;
-          std::cout << "Altitude Reached. Transitioning to Multicopter and holding." << std::endl;           
+          RCLCPP_INFO(node().get_logger(), "Altitude Reached. Transitioning to Multicopter and holding.");           
         }
       }
       break; 
@@ -105,7 +106,7 @@ public:
 
           Eigen::Vector3f acceleration_sp = _vtol->compute_acceleration_setpoint_during_transition(); 
           Eigen::Vector3f velocity_sp{NAN, NAN, 0.f}; 
-          float course_sp = M_PI; //align vehicle south
+          float course_sp = 180.0_deg; // start aligning vehicle south during transition 
           float height_rate_sp = 0.f; 
 
           _trajectory_setpoint->update(velocity_sp, acceleration_sp); 
@@ -115,7 +116,7 @@ public:
 
           Eigen::Vector3f velocity_sp{0.f, 0.f, 0.f}; 
           Eigen::Vector3f acceleration_sp{NAN, NAN, NAN}; 
-          float heading_sp = M_PI; 
+          float heading_sp = 180.0_deg; 
 
           _trajectory_setpoint->update(velocity_sp, acceleration_sp, heading_sp); 
         }
