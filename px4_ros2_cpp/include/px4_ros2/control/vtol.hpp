@@ -71,13 +71,13 @@ public:
    * VTOL Transition
    */
 
-  bool to_multicopter();
-  bool to_fixedwing();
+  bool toMulticopter();
+  bool toFixedwing();
 
-  Eigen::Vector3f compute_acceleration_setpoint_during_transition(
+  Eigen::Vector3f computeAccelerationSetpointDuringTransition(
     std::optional<float> back_transition_deceleration_m_s2 = std::nullopt);
 
-  VTOL::State get_current_state();
+  VTOL::State getCurrentState();
 
 private:
   rclcpp::Node & _node;
@@ -96,7 +96,7 @@ private:
 
   VTOL::State _current_state{VTOL::State::UNDEFINED};
 
-  float compute_pitch_setpoint_during_backtransition(
+  float computePitchSetpointDuringBacktransition(
     std::optional<float> back_transition_deceleration_m_s2 = std::nullopt);
 
   VTOLConfig _config;

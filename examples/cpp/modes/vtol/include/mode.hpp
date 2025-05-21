@@ -28,100 +28,107 @@ class FlightModeTest : public px4_ros2::ModeBase
 public:
   explicit FlightModeTest(rclcpp::Node & node)
   : ModeBase(node, kName)
-  { 
+  {
     _vtol = std::make_shared<px4_ros2::VTOL>(*this);
-    _trajectory_setpoint = std::make_shared<px4_ros2::TrajectorySetpointType>(*this); 
-    _fixed_wing_setpoint = std::make_shared<px4_ros2::FwLateralLongitudinalSetpointType>(*this); 
+    _trajectory_setpoint = std::make_shared<px4_ros2::TrajectorySetpointType>(*this);
+    _fixed_wing_setpoint = std::make_shared<px4_ros2::FwLateralLongitudinalSetpointType>(*this);
 
     _vehicle_global_position = std::make_shared<px4_ros2::OdometryGlobalPosition>(*this);
   }
 
-  void onActivate() override 
+  void onActivate() override
   {
-   VTOL::State initial_vtol_state = _vtol->get_current_state(); 
+    VTOL::State initial_vtol_state = _vtol->getCurrentState();
 
-    if(initial_vtol_state == VTOL::State::FIXED_WING){
-      _control_state = State::GoingNorth; 
-      RCLCPP_INFO(node().get_logger(), "VTOL Mode Activated. Flying North, climbing to 600m above sea level."); 
-    } else if(initial_vtol_state == VTOL::State::UNDEFINED){
+    if (initial_vtol_state == VTOL::State::FIXED_WING) {
+      _control_state = State::GoingNorth;
+      RCLCPP_INFO(
+        node().get_logger(),
+        "VTOL Mode Activated. Flying North, climbing to 600m above sea level.");
+    } else if (initial_vtol_state == VTOL::State::UNDEFINED) {
       throw std::runtime_error("VTOL state undefined.");
-    } else{
-      _control_state = State::TransitionToFixedWing; 
+    } else {
+      _control_state = State::TransitionToFixedWing;
       RCLCPP_INFO(node().get_logger(), "VTOL Mode Activated. Transitioning to Fixed-Wing");
+    }
   }
-}
 
   void onDeactivate() override {}
 
   void updateSetpoint(float dt_s) override
   {
     switch (_control_state) {
-      
+
       case State::TransitionToFixedWing: {
 
-        _vtol->to_fixedwing(); 
+          _vtol->toFixedwing();
 
-        if (_vtol->get_current_state() == VTOL::State::TRANSITION_TO_FIXED_WING){
+          if (_vtol->getCurrentState() == VTOL::State::TRANSITION_TO_FIXED_WING) {
 
-          Eigen::Vector3f acceleration_sp = _vtol->compute_acceleration_setpoint_during_transition(); 
-          Eigen::Vector3f velocity_sp{NAN, NAN, 0.f}; 
-          float course_sp = 0.f; // align vehicle north 
-          float height_rate_sp = 0.f; 
+            Eigen::Vector3f acceleration_sp =
+              _vtol->computeAccelerationSetpointDuringTransition();
+            Eigen::Vector3f velocity_sp{NAN, NAN, 0.f};
+            float course_sp = 0.f; // align vehicle north
+            float height_rate_sp = 0.f;
 
-          _trajectory_setpoint->update(velocity_sp, acceleration_sp); 
-          _fixed_wing_setpoint->updateWithHeightRate(height_rate_sp, course_sp);
+            _trajectory_setpoint->update(velocity_sp, acceleration_sp);
+            _fixed_wing_setpoint->updateWithHeightRate(height_rate_sp, course_sp);
 
-        } else if(_vtol->get_current_state() == VTOL::State::FIXED_WING){
+          } else if (_vtol->getCurrentState() == VTOL::State::FIXED_WING) {
 
-          float altitude_sp = 600.f; 
-          float course_sp = 0.f; // due north 
+            float altitude_sp = 600.f;
+            float course_sp = 0.f; // due north
 
-          _fixed_wing_setpoint->updateWithAltitude(altitude_sp, course_sp); 
+            _fixed_wing_setpoint->updateWithAltitude(altitude_sp, course_sp);
 
-          _control_state = State::GoingNorth; 
-          RCLCPP_INFO(node().get_logger(), "Transition complete. Flying North, climbing to 600m above sea level."); 
+            _control_state = State::GoingNorth;
+            RCLCPP_INFO(
+              node().get_logger(),
+              "Transition complete. Flying North, climbing to 600m above sea level.");
+          }
         }
-      }
-      break; 
+        break;
 
       case State::GoingNorth: {
 
-        float altitude_sp = 600.f; 
-        float course_sp = 0.f; // due north 
+          float altitude_sp = 600.f;
+          float course_sp = 0.f; // due north
 
-        _fixed_wing_setpoint->updateWithAltitude(altitude_sp, course_sp); 
+          _fixed_wing_setpoint->updateWithAltitude(altitude_sp, course_sp);
 
-        if(_vehicle_global_position->position().z() >= (altitude_sp - 5.f)){
-          _control_state = State::TransitionToMulticopterAndHold;
-          RCLCPP_INFO(node().get_logger(), "Altitude Reached. Transitioning to Multicopter and holding.");           
+          if (_vehicle_global_position->position().z() >= (altitude_sp - 5.f)) {
+            _control_state = State::TransitionToMulticopterAndHold;
+            RCLCPP_INFO(
+              node().get_logger(), "Altitude Reached. Transitioning to Multicopter and holding.");
+          }
         }
-      }
-      break; 
+        break;
 
       case State::TransitionToMulticopterAndHold: {
 
-        _vtol->to_multicopter(); 
+          _vtol->toMulticopter();
 
-        if (_vtol->get_current_state() == VTOL::State::TRANSITION_TO_MULTICOPTER){
+          if (_vtol->getCurrentState() == VTOL::State::TRANSITION_TO_MULTICOPTER) {
 
-          Eigen::Vector3f acceleration_sp = _vtol->compute_acceleration_setpoint_during_transition(); 
-          Eigen::Vector3f velocity_sp{NAN, NAN, 0.f}; 
-          float course_sp = 180.0_deg; // start aligning vehicle south during transition 
-          float height_rate_sp = 0.f; 
+            Eigen::Vector3f acceleration_sp =
+              _vtol->computeAccelerationSetpointDuringTransition(); 
+            Eigen::Vector3f velocity_sp{NAN, NAN, 0.f};
+            float course_sp = 180.0_deg; // start aligning vehicle south during transition
+            float height_rate_sp = 0.f;
 
-          _trajectory_setpoint->update(velocity_sp, acceleration_sp); 
-          _fixed_wing_setpoint->updateWithHeightRate(height_rate_sp, course_sp);
+            _trajectory_setpoint->update(velocity_sp, acceleration_sp);
+            _fixed_wing_setpoint->updateWithHeightRate(height_rate_sp, course_sp);
 
-        } else if(_vtol->get_current_state() == VTOL::State::MULTICOPTER){
+          } else if (_vtol->getCurrentState() == VTOL::State::MULTICOPTER) {
 
-          Eigen::Vector3f velocity_sp{0.f, 0.f, 0.f}; 
-          Eigen::Vector3f acceleration_sp{NAN, NAN, NAN}; 
-          float heading_sp = 180.0_deg; 
+            Eigen::Vector3f velocity_sp{0.f, 0.f, 0.f};
+            Eigen::Vector3f acceleration_sp{NAN, NAN, NAN};
+            float heading_sp = 180.0_deg;
 
-          _trajectory_setpoint->update(velocity_sp, acceleration_sp, heading_sp); 
+            _trajectory_setpoint->update(velocity_sp, acceleration_sp, heading_sp);
+          }
         }
-      }
-  }
+    }
   }
 
 private:

@@ -10,7 +10,7 @@
 
 using namespace std::chrono_literals;
 
-static constexpr float CONSTANTS_ONE_G = 9.80665f; // m/s^2
+static constexpr float kConstantsOneG = 9.80665f; // m/s^2
 
 namespace px4_ros2
 {
@@ -60,12 +60,12 @@ VTOL::VTOL(Context & context, const VTOLConfig & config)
 
 }
 
-VTOL::State VTOL::get_current_state()
+VTOL::State VTOL::getCurrentState()
 {
   return _current_state;
 }
 
-bool VTOL::to_multicopter()
+bool VTOL::toMulticopter()
 {
   const auto now = _node.get_clock()->now();
 
@@ -89,13 +89,13 @@ bool VTOL::to_multicopter()
       _vehicle_command_pub->publish(cmd);
     }
     return true;
-  } else {
-    RCLCPP_WARN(_node.get_logger(), "Current VTOL vehicle state unknown. Not able to transition.");
-    return false;
   }
+
+  RCLCPP_WARN(_node.get_logger(), "Current VTOL vehicle state unknown. Not able to transition.");
+  return false;
 }
 
-bool VTOL::to_fixedwing()
+bool VTOL::toFixedwing()
 {
   const auto now = _node.get_clock()->now();
 
@@ -119,35 +119,35 @@ bool VTOL::to_fixedwing()
       _vehicle_command_pub->publish(cmd);
     }
     return true;
-  } else {
-    RCLCPP_WARN(_node.get_logger(), "Current VTOL vehicle state unknown. Not able to transition.");
-    return false;
   }
+
+  RCLCPP_WARN(_node.get_logger(), "Current VTOL vehicle state unknown. Not able to transition.");
+  return false;
 }
 
-Eigen::Vector3f VTOL::compute_acceleration_setpoint_during_transition(
+Eigen::Vector3f VTOL::computeAccelerationSetpointDuringTransition(
   std::optional<float> back_transition_deceleration_m_s2)
 {
   const Eigen::Vector2f velocity_xy_direction = {std::cos(_vehicle_heading), std::sin(
       _vehicle_heading)};
-  const bool is_backtransition = VTOL::get_current_state() ==
+  const bool is_backtransition = VTOL::getCurrentState() ==
     VTOL::State::TRANSITION_TO_MULTICOPTER;
 
   float pitch_setpoint = 0.f;
 
   if (is_backtransition) {
     pitch_setpoint =
-      compute_pitch_setpoint_during_backtransition(back_transition_deceleration_m_s2);
+      computePitchSetpointDuringBacktransition(back_transition_deceleration_m_s2);
   }
 
-  Eigen::Vector2f acceleration_setpoint_during_transition = tanf(pitch_setpoint) * CONSTANTS_ONE_G *
+  Eigen::Vector2f acceleration_setpoint_during_transition = tanf(pitch_setpoint) * kConstantsOneG *
     -velocity_xy_direction;
 
   return {acceleration_setpoint_during_transition.x(), acceleration_setpoint_during_transition.y(),
     NAN};
 }
 
-float VTOL::compute_pitch_setpoint_during_backtransition(
+float VTOL::computePitchSetpointDuringBacktransition(
   std::optional<float> back_transition_deceleration_m_s2)
 {
 

@@ -79,7 +79,7 @@ public:
 * If no configurations have been previously set, PX4 will set default configurations.
 */
   void updateWithAltitude(
-    const float altitude_amsl_sp, const float course_sp,
+    float altitude_amsl_sp, float course_sp,
     std::optional<float> equivalent_airspeed_sp = {},
     std::optional<float> lateral_acceleration_sp = {});
 
@@ -91,7 +91,7 @@ public:
 * If no configurations have been previously set, PX4 will set default configurations.
 */
   void updateWithHeightRate(
-    const float height_rate_sp, const float course_sp,
+    float height_rate_sp, float course_sp,
     std::optional<float> equivalent_airspeed_sp = {},
     std::optional<float> lateral_acceleration_sp = {});
 
