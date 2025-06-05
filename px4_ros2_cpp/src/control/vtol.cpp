@@ -175,6 +175,16 @@ float VTOL::computePitchSetpointDuringBacktransition(
     (_config.back_transition_deceleration_setpoint_to_pitch_I * deceleration_error) * dt;
   _decel_error_bt_int = std::clamp(_decel_error_bt_int, 0.f, _config.deceleration_integrator_limit);
 
+  if (std::isnan(_decel_error_bt_int)) {
+    std::cerr << "px4_ros2_cpp computePitchSetpointDuringBacktransition: _decel_error_bt_int is NaN." << std::endl;
+    std::cerr << "deceleration_setpoint: " << deceleration_setpoint << std::endl;
+    std::cerr << "deceleration: " << deceleration << std::endl;
+    std::cerr << "deceleration_error: " << deceleration_error << std::endl;
+    std::cerr << "dt: " << dt << std::endl;
+    std::cerr << "I gain: " << _config.back_transition_deceleration_setpoint_to_pitch_I << std::endl;
+    std::cerr << "upper limit: " << _config.deceleration_integrator_limit << std::endl;
+  }
+
   return _decel_error_bt_int;
 }
 
