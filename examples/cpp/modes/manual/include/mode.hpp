@@ -1,75 +1,58 @@
-/****************************************************************************
- * Copyright (c) 2023 PX4 Development Team.
- * SPDX-License-Identifier: BSD-3-Clause
- ****************************************************************************/
 #pragma once
-
 #include <px4_ros2/components/mode.hpp>
-#include <px4_ros2/control/setpoint_types/experimental/rates.hpp>
 #include <px4_ros2/control/setpoint_types/experimental/attitude.hpp>
 #include <px4_ros2/control/peripheral_actuators.hpp>
 #include <px4_ros2/utils/geometry.hpp>
-
+#include <px4_ros2/odometry/local_position.hpp>
 #include <Eigen/Eigen>
-
 #include <rclcpp/rclcpp.hpp>
 
-using namespace std::chrono_literals; // NOLINT
+using namespace std::chrono_literals;
 
-static const std::string kName = "My Manual Mode";
+static const std::string kName = "NoseDiveControl";
 
 class FlightModeTest : public px4_ros2::ModeBase
 {
 public:
   explicit FlightModeTest(rclcpp::Node & node)
   : ModeBase(node, kName)
+  , _attitude_setpoint(std::make_shared<px4_ros2::AttitudeSetpointType>(*this))
+  , _peripheral_actuator_controls(std::make_shared<px4_ros2::PeripheralActuatorControls>(*this))
+  , _vehicle_local_position(std::make_shared<px4_ros2::OdometryLocalPosition>(*this))
+  , _nose_dive_pitch(-0.5410f) // -31 degrees in radians (nose down)
+  , _nose_dive_thrust(0.70f)   // Thrust for rapid descent with attitude control
+  , _yaw(1.574f)               // Fixed yaw (90 degrees)
   {
-    _manual_control_input = std::make_shared<px4_ros2::ManualControlInput>(*this);
-    _rates_setpoint = std::make_shared<px4_ros2::RatesSetpointType>(*this);
-    _attitude_setpoint = std::make_shared<px4_ros2::AttitudeSetpointType>(*this);
-    _peripheral_actuator_controls = std::make_shared<px4_ros2::PeripheralActuatorControls>(*this);
   }
 
-  void onActivate() override {}
+  void onActivate() override 
+  {
+  }
 
-  void onDeactivate() override {}
+  void onDeactivate() override 
+  {
+  }
 
   void updateSetpoint(float dt_s) override
   {
-    const float threshold = 0.9f;
-    const bool want_rates = fabsf(_manual_control_input->roll()) > threshold || fabsf(
-      _manual_control_input->pitch()) > threshold;
+    // Nose dive: fixed pitch, zero roll, low thrust
+    Eigen::Vector2f pitch_roll(0.0f, _nose_dive_pitch); // Roll = 0, Pitch = -31 degrees
+    float thrust = _nose_dive_thrust;
 
-    const float yaw_rate = px4_ros2::degToRad(_manual_control_input->yaw() * 120.f);
+    // Convert pitch, roll, yaw to quaternion
+    const Eigen::Quaternionf qd = px4_ros2::eulerRpyToQuaternion(pitch_roll.x(), pitch_roll.y(), _yaw);
+    const Eigen::Vector3f thrust_sp{0.0f, 0.0f, -thrust};
 
-    if (want_rates) {
-      const Eigen::Vector3f thrust_sp{0.f, 0.f, -_manual_control_input->throttle()};
-      const Eigen::Vector3f rates_sp{
-        px4_ros2::degToRad(_manual_control_input->roll() * 500.f),
-        px4_ros2::degToRad(-_manual_control_input->pitch() * 500.f),
-        yaw_rate
-      };
-      _rates_setpoint->update(rates_sp, thrust_sp);
-
-    } else {
-      _yaw += yaw_rate * dt_s;
-      const Eigen::Vector3f thrust_sp{0.f, 0.f, -_manual_control_input->throttle()};
-      const Eigen::Quaternionf qd = px4_ros2::eulerRpyToQuaternion(
-        px4_ros2::degToRad(_manual_control_input->roll() * 55.f),
-        px4_ros2::degToRad(-_manual_control_input->pitch() * 55.f),
-        _yaw
-      );
-      _attitude_setpoint->update(qd, thrust_sp, yaw_rate);
-    }
-
-    // Example to control a servo by passing through RC aux1 channel to 'Peripheral Actuator Set 1'
-    _peripheral_actuator_controls->set(_manual_control_input->aux1());
+    _attitude_setpoint->update(qd, thrust_sp, 0.0f);
+    _peripheral_actuator_controls->set(0.0f);
   }
 
 private:
-  std::shared_ptr<px4_ros2::ManualControlInput> _manual_control_input;
-  std::shared_ptr<px4_ros2::RatesSetpointType> _rates_setpoint;
   std::shared_ptr<px4_ros2::AttitudeSetpointType> _attitude_setpoint;
   std::shared_ptr<px4_ros2::PeripheralActuatorControls> _peripheral_actuator_controls;
-  float _yaw{0.f};
+  std::shared_ptr<px4_ros2::OdometryLocalPosition> _vehicle_local_position;
+
+  float _nose_dive_pitch; // Pitch angle for nose dive (radians)
+  float _nose_dive_thrust; // Thrust for nose dive
+  float _yaw; // Fixed yaw angle
 };
